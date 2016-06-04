@@ -1,0 +1,79 @@
+# -*- mode: org; -*-
+#+TITLE: ~asdf-shared-library~ - Compile and Load Shared Libraries with ASDF
+#+AUTHOR: R. Mattes
+#+EMAIL: rm@mh-freiburg.de
+
+
+* Abstract
+
+* Installation
+
+* Modus Operandi
+
+* Using the ~shared-library~  Component
+
+#+BEGIN_SRC common-lisp
+
+  (asdf:defsystem :foo
+    :serial t
+    :author "Nils Nasenbär"
+    :licence "GPLv2 or later"
+    :build-depends (#:asdf-shared-library)   ; <- this is important!
+    :depends-on (....)
+    :components
+    (
+     (:shared-library "libfoo"
+                      :sources ((:c-source "foo")
+                                (:c-source "bar"))
+                      :packages ("libbaz" "libgnumpf")
+                      )))
+#+END_SRC
+
+** Anatomy of the ~shared-library~ component
+The name of the component denotes the default library name of the
+generated shared library, so a component "libfoo" will compile to
+=libfoo.so= on Linux ond ~libfoo.dylib~ on Mac OSX. The following
+keyword arguments can be provided
+
+ - :sources :: A list of ~c-source~ components that will be compiled into the shared library.
+
+ - :cflags :: A list of strings that will be added to the compiler
+      invcation before flags provided from the =pkg-config= invocation
+      (see below). Please note that the neccessary flags to output a
+      shared library will already be present.
+
+ - :ldflags :: A list of strings that will be added to the compiler
+      invcation before flags provided from the =pkg-config= invocation
+      (see below)
+
+ - :packages :: A list of "packages", i.e. a list of what ~pkg-config~
+      call "libraries" that need to be added to the shared library.
+      For each package, asdf-shared-library will call =pkg-config= to
+      fetch the needed compiler flags and linker flags.
+
+** Tweaking the compilation process
+In some rare cases or on an unusal platform/host it might be
+neccessary to tweak/customize the compilation process. This is best
+done by binding some special variables arround loading your system.
+
+The following special varialbles are currently supported:
+
+ - asdf-shared-library:*compiler* :: the compiler used to compile the library
+ - asdf-shared-library:*cflags* :: the default compiler flags to
+      generate a shared library. N.B: this string (not a list of
+      strings!) will replace the system efaults, so you better make
+      shure that your flags /will/ produce a valid shared library.
+      Sometimes =(string-append asdf-shared-library:*cflags*
+      "-my-extra-flag ")= will o the right thing.
+ - asdf-shared-library:*pkg-config-binary* :: Which ~pkg-config~ binary
+      to call. N.B.: you can modify where ~pkg-config~ searches for
+      libraries by setting the =PKG_CONFIG_PATH= environment variable
+      (see man pkg-config)
+
+*** Example
+    Compile your library using LLVM's ~c++~ compiler
+#+BEGIN_SRC common-lisp
+
+  (let ((asdf-shared-library:*compiler* "clang++"))
+    (asdf:make *:libfoo))
+#+END_SRC
