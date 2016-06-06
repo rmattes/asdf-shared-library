@@ -23,7 +23,7 @@
 (defvar *compiler* "cc"
   "Default compiler to compile a shared library")
 
-(defvar *cflags* "-fPIC -shared"
+(defvar *cflags* #+linux "-fPIC -shared" #+darwin "-dynamiclib"
   "Default cflags to compile sources to a shared library")
 
 (defvar *pkg-config-binary* "pkg-config"
@@ -47,7 +47,7 @@
   ((so-file-type :accessor so-file-type-of :initform
                  #+linux "so"
                  #+winows "dll"
-                 #+darwin "dly")
+                 #+darwin "dylib")
    (soures       :initarg  :sources         :accessor sources-of  :initform ())
    (cflags       :initarg  :cflags          :accessor cflags-of   :initform ())
    (libs         :initarg  :libs            :accessor libs-of     :initform ())

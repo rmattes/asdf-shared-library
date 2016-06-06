@@ -109,7 +109,7 @@ types of components are supported, ~c-sources~ and ~c-headers. All
 shared library (the are fed in serial order to the C compiler).
 
 You might ask why we even need to track the ~c-headers~ at all. First,
-we need the for depenency tracking, i.e. any change in a header file
+we need them for depenency tracking, i.e. any change in a header file
 should trigger the recompilation of the library. Second, some parts of
 ASF (or other, external tools) like a ~bundle~ operation or a
 packing/archiving tool neet to know about these files.
