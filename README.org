@@ -7,6 +7,17 @@
 * Abstract
 
 * Installation
+The easiest way to install ~asdf-shared-library~ is to check out the git repository at
+https://github.com/rmattes/asdf-shared-library.git into your local quicklisp directory:
+#+BEGIN_SRC shell
+$ cd ~/quicklisp/local-projects
+$ git clone https://github.com/rmattes/asdf-shared-library.git
+#+end_SRC
+
+If you have strong reasons /not/ to use quicklisp you shure are smart
+enough to adapt the install to your local setup.
+
+N.B.: ~asdf-shared-library~ is unfinished and alpha ware. You have been warned.
 
 * Modus Operandi
 
@@ -15,18 +26,58 @@
 #+BEGIN_SRC common-lisp
 
   (asdf:defsystem :foo
+    :author "Nathan Nasenbaer"
+    :license "GPLv2 or later"
+    :version "0.1"
+    :defsystem-depends-on (#:asdf-shared-library)
+    :depends-on (#:cffi)
     :serial t
-    :author "Nils Nasenbär"
-    :licence "GPLv2 or later"
-    :build-depends (#:asdf-shared-library)   ; <- this is important!
-    :depends-on (....)
     :components
-    (
+    ((:file "package")
      (:shared-library "libfoo"
-                      :sources ((:c-source "foo")
-                                (:c-source "bar"))
-                      :packages ("libbaz" "libgnumpf")
-                      )))
+                      :components ((:c-source "foo.c")
+                                   (:c-header "foo.h")
+                                   (:c-source "bar.c"))
+                      :packages ("jack" "alsa"))
+     (:file "foo")))
+
+#+END_SRC
+
+Where ~foo.c~ and ~bar.c~ contain:
+#+BEGIN_SRC c
+  #include <stdio.h>
+
+  void say_hello (void){
+    printf ("Hello World!\n");
+  }
+
+  /* ..... */
+  int strange_number(int in) {
+    if (0 > in) {
+      return 42;
+    }
+    return in;
+  }
+#+END_SRC
+
+And ~foo.lisp~ looks like this:
+#+BEGIN_SRC lisp
+(in-package #:foo)
+
+;;; From foo.c
+(cffi:defcfun ("strange_number" strange-number) :int
+  (in :int))
+
+;;; From bar.c
+(cffi:defcfun ("say_hello" say-hello) :void)
+#+END_SRC
+
+Then the following should work:
+#+BEGIN_SRC lisp
+ (asdf:make :foo)
+ (foo:say-hello)
+ (foo:strange-number 21)
+ (foo:strange-number -21)
 #+END_SRC
 
 ** Anatomy of the ~shared-library~ component
@@ -50,6 +101,18 @@ keyword arguments can be provided
       call "libraries" that need to be added to the shared library.
       For each package, asdf-shared-library will call =pkg-config= to
       fetch the needed compiler flags and linker flags.
+
+The ~shared-library~ component is implemented as a subclass of an ASDF
+module and can (and actually: should) contain other components. Two
+types of components are supported, ~c-sources~ and ~c-headers. All
+~c-sources~ of the ~shared-library~ module will be used to compile the
+shared library (the are fed in serial order to the C compiler).
+
+You might ask why we even need to track the ~c-headers~ at all. First,
+we need the for depenency tracking, i.e. any change in a header file
+should trigger the recompilation of the library. Second, some parts of
+ASF (or other, external tools) like a ~bundle~ operation or a
+packing/archiving tool neet to know about these files.
 
 ** Tweaking the compilation process
 In some rare cases or on an unusal platform/host it might be
@@ -77,3 +140,12 @@ The following special varialbles are currently supported:
   (let ((asdf-shared-library:*compiler* "clang++"))
     (asdf:make *:libfoo))
 #+END_SRC
+
+* Know Issues/Todo List
+
+- Dependency tracking doesn't honor the components yet.
+- I would be conveninet to (re)use the already existing ~c-source-file~
+  component from ASDF, but, alas, that cmponent assumes that every
+  source file is compiled independent.
+
+Definitly more that will show up.
