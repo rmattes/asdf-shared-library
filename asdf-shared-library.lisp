@@ -46,7 +46,7 @@
 (defclass shared-library (parent-component component)
   ((so-file-type :accessor so-file-type-of :initform
                  #+linux "so"
-                 #+winows "dll"
+                 #+windows "dll"
                  #+darwin "dylib")
    (soures       :initarg  :sources         :accessor sources-of  :initform ())
    (cflags       :initarg  :cflags          :accessor cflags-of   :initform ())
